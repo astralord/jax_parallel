@@ -11,12 +11,12 @@ class SwiGLUParams(NamedTuple):
     v:  jnp.ndarray
 
 @jit
-def swiglu(x: jnp.ndarray, params: SwiGLUParams):
+def swiglu(x: ArrayLike, params: SwiGLUParams) -> Array:
     y = x @ params.v
     z = jax.nn.swish(x @ params.w1)
     return (z * y) @ params.w2
 
-def init_swiglu_weights(embed_dim: int, hidden_dim: int, rng: ArrayLike):
+def init_swiglu_weights(embed_dim: int, hidden_dim: int, rng: ArrayLike) -> SwiGLUParams:
     '''
         Create SwiGLU weights with Xavier initialization
     '''

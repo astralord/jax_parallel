@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 from tqdm import tqdm
 
-def train_with_tensor_parallel(dataset: jnp.ndarray, params: list[Params], num_epochs: int):
+def train_with_tensor_parallel(dataset: ArrayLike, params: list[Params], num_epochs: int):
     G = jax.local_device_count()
     sharded_params = [
         Params(w1=split(p.w1, num_sections=G, axis=1), 

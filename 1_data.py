@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 from tqdm import tqdm
 
-def train_with_data_parallel(dataset: jnp.ndarray, params: list[Params], num_epochs: int):
+def train_with_data_parallel(dataset: ArrayLike, params: list[Params], num_epochs: int):
     G = jax.local_device_count()
     # replicate model weights
     replicated_params = [

@@ -4,28 +4,28 @@ from jax import jit, random
 from jax.debug import visualize_array_sharding
 import matplotlib as mpl
 from typing import NamedTuple
-from jax._src.typing import ArrayLike
+from jax._src.typing import ArrayLike, Array, Any
 import functools
 
 class Params(NamedTuple):
     w1: jnp.ndarray
     w2: jnp.ndarray
 
-def visualize(tensor, color_map="Set3"):
+def visualize(tensor: ArrayLike, color_map: str="Set3"):
     visualize_array_sharding(tensor, color_map=mpl.colormaps[color_map])
 
 @jit
-def ffn(x: jnp.array, params: Params):
+def ffn(x: ArrayLike, params: Params) -> Array:
     z = jnp.maximum(x @ params.w1, 0)
     return z @ params.w2
 
 @jit
-def model(x: jnp.array, params: Params):
+def model(x: ArrayLike, params: Params) -> Array:
     for p in params:
         x += ffn(x, p)
     return x
 
-def init_ffn_weights(embed_dim: int, hidden_dim: int, rng: ArrayLike):
+def init_ffn_weights(embed_dim: int, hidden_dim: int, rng: ArrayLike) -> Params:
     '''
         Create FFN weights with Xavier initialization
     '''
@@ -35,7 +35,7 @@ def init_ffn_weights(embed_dim: int, hidden_dim: int, rng: ArrayLike):
     w2 = std * random.normal(w2_key, (hidden_dim, embed_dim))
     return Params(w1, w2)
 
-def init_weights(embed_dim: int, hidden_dim: int, layer_num: int, rng: ArrayLike):
+def init_weights(embed_dim: int, hidden_dim: int, layer_num: int, rng: ArrayLike) -> list[Params]:
     '''
         Create weights for a stack of `layer_num` FFN layers
     '''
@@ -45,7 +45,7 @@ def init_weights(embed_dim: int, hidden_dim: int, layer_num: int, rng: ArrayLike
         for l in range(layer_num)
     ]
 
-def sample_data(batch_size: int, embed_dim: int, rng):
+def sample_data(batch_size: int, embed_dim: int, rng: ArrayLike) -> tuple[Array, Array]:
     '''
         Create random features `x` and dependable random targets `y`
     '''
@@ -54,18 +54,21 @@ def sample_data(batch_size: int, embed_dim: int, rng):
     y = jnp.sin(x @ w)
     return x, y
 
-def create_dataset(num_samples: int, batch_size: int, embed_dim: int):
+def create_dataset(num_samples: int, batch_size: int, embed_dim: int) -> Array:
+    '''
+        Create an array of samples (`x`, `y`)
+    '''
     return jnp.array([
         sample_data(batch_size, embed_dim, random.PRNGKey(i)) 
         for i in range(num_samples)
     ])
 
 @jit 
-def criterion(y_pred: jnp.ndarray, y_true: jnp.ndarray):
+def criterion(y_pred: ArrayLike, y_true: ArrayLike) -> float:
     return jnp.mean((y_pred - y_true) ** 2)
 
 @jit
-def loss_fn(params: Params, x: jnp.ndarray, y: jnp.ndarray):
+def loss_fn(params: Params, x: ArrayLike, y: ArrayLike) -> float:
     y_pred = model(x, params)
     return criterion(y_pred, y)
 
@@ -73,7 +76,7 @@ def loss_fn(params: Params, x: jnp.ndarray, y: jnp.ndarray):
 # to later tell 'jax.lax.pmean' which axis to reduce over. Here, we call it
 # 'G', but could have used anything, so long as 'pmean' used the same.
 @functools.partial(jax.pmap, axis_name='G')
-def update(params: Params, x: jnp.ndarray, y: jnp.ndarray):
+def update(params: Params, x: ArrayLike, y: ArrayLike) -> Any:
     # Compute the gradients on the given minibatch (individually on each device)
     loss, grads = jax.value_and_grad(loss_fn)(params, x, y)
 
@@ -90,10 +93,10 @@ def update(params: Params, x: jnp.ndarray, y: jnp.ndarray):
        lambda param, g: param - g * LEARNING_RATE, params, grads)
     return new_params, loss
 
-def split(arr: jnp.ndarray, num_sections: int=None, axis: int=0):
+def split(arr: ArrayLike, num_sections: int=None, axis: int=0) -> Array:
     return jnp.array(jnp.split(arr, num_sections, axis=axis))
 
-def stack_stage_weights(params: list):
+def stack_stage_weights(params: list[Params]) -> list[Params]:
     '''
         Stack G stages, each containing L/G FFN layers
     '''
@@ -108,7 +111,7 @@ def stack_stage_weights(params: list):
         out_params.append(Params(w1, w2))
     return out_params
 
-def scatter(input: jnp.ndarray, dim: int, index: jnp.ndarray, src: int):
+def scatter(input: ArrayLike, dim: int, index: ArrayLike, src: int) -> Array:
     '''
         Scatter function analogous to PyTorch `scatter_`
     '''
@@ -118,7 +121,7 @@ def scatter(input: jnp.ndarray, dim: int, index: jnp.ndarray, src: int):
     idx[dim] = index
     return input.at[tuple(idx)].set(src)
 
-def index_to_mask(index: jnp.ndarray, input_shape: tuple):
+def index_to_mask(index: ArrayLike, input_shape: tuple) -> Array:
     '''
         Transform given indices to mask of input shape,
         where mask[index] = True and False otherwise

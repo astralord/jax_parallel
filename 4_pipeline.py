@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from utils import *
 from jax import random
 
-def pipeline_inference(params: list[Params], x: jnp.ndarray, M: int):
+def pipeline_inference(params: list[Params], x: ArrayLike, M: int) -> Array:
     '''
         Split input batch to M micro-batches and run PP forward pass
     '''

@@ -3,13 +3,13 @@ import jax.numpy as jnp
 from jax import random
 from utils import *
 
-def dense_gating(x: jnp.ndarray, gate_params: jnp.ndarray):
+def dense_gating(x: ArrayLike, gate_params: ArrayLike) -> Array:
     return jax.nn.softmax(x @ gate_params)
 
-def sparse_gating(x: jnp.ndarray, 
-                  gate_params: jnp.ndarray,  
+def sparse_gating(x: ArrayLike, 
+                  gate_params: ArrayLike,  
                   topk: int, 
-                  noise_weights: jnp.ndarray=None,
+                  noise_weights: ArrayLike=None,
                   rng: ArrayLike=None):
     h = x @ gate_params 
     if noise_weights is not None:

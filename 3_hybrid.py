@@ -6,7 +6,7 @@ import jax
 import jax.numpy as jnp
 from tqdm import tqdm
 
-def train_with_hybrid_parallel(dataset: jnp.ndarray, params: list[Params], num_epochs: int, DP: int, TP: int):
+def train_with_hybrid_parallel(dataset: ArrayLike, params: list[Params], num_epochs: int, DP: int, TP: int):
     sharded_params = [
         Params(w1=split(p.w1, num_sections=TP, axis=1), 
                w2=split(p.w2, num_sections=TP, axis=0))

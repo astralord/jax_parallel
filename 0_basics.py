@@ -18,8 +18,8 @@ if __name__ == '__main__':
 
     batch_size, embed_dim = 16, 8
     x = jnp.zeros((batch_size, embed_dim))
-    print(x.device()) # will output default device, e.g. TFRT_CPU_0
-    print(jax.device_put(x, jax.devices()[1]).device()) # TFRT_CPU_1
+    print(x.devices()) # will output default device, e.g. {CpuDevice(id=0)}
+    print(jax.device_put(x, jax.devices()[1]).devices()) # {CpuDevice(id=1)}
     
     sharding = PositionalSharding(jax.devices())
     G = jax.local_device_count()
